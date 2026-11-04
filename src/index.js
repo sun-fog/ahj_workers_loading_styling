@@ -1,6 +1,6 @@
 import './css/style.css';
 
-const API_URL = 'https://ВАШ-САЙТ.netlify.app/.netlify/functions/news';
+const API_URL = 'https://remarkable-cassata-5e99fd.netlify.app/.netlify/functions/news';
 // const API_URL = 'http://localhost:3000/news';
 
 
