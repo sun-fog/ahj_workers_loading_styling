@@ -1,58 +1,29 @@
-const CACHE_NAME = 'cinema-news-v1';
+import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(['./', './index.html']))
-  );
-  self.skipWaiting();
-});
+// eslint-disable-next-line no-undef
+precacheAndRoute(self.__WB_MANIFEST);
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-      )
-  );
-  self.clients.claim();
-});
+// Навигация: отдаём закешированный index.html
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
+// API новостей: сначала сеть (3 сек), при сбое — кеш
+registerRoute(
+  ({ url }) =>
+    (url.origin === 'https://remarkable-cassata-5e99fd.netlify.app' &&
+      url.pathname.startsWith('/.netlify/functions/')) ||
+    url.pathname.endsWith('/news'),
+  new NetworkFirst({
+    cacheName: 'api-cache',
+    networkTimeoutSeconds: 3,
+    plugins: [new CacheableResponsePlugin({ statuses: [200] })],
+  })
+);
 
-  const url = new URL(request.url);
-
-  // API - только сеть, чтобы приложение само показало состояние ошибки
-  if (url.pathname.endsWith('/news')) return;
-
-  // Навигация офлайн - отдаём закешированный index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', clone));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
-  // Статика - cache-first
-  event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-    )
-  );
-});
+// Картинки: сначала кеш, обновление в фоне
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new StaleWhileRevalidate({ cacheName: 'image-cache' })
+);

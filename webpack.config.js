@@ -2,6 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { InjectManifest } = require('workbox-webpack-plugin');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -17,10 +18,14 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({ template: './src/index.html' }),
-    new MiniCssExtractPlugin({
-      filename: isProd ? 'style.[contenthash].css' : 'style.css',
+    new MiniCssExtractPlugin({ filename: isProd ? 'style.[contenthash].css' : 'style.css' }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'src/manifest.json', to: '.' },
+        { from: 'src/icons', to: 'icons' },
+      ],
     }),
-    new CopyWebpackPlugin({ patterns: [{ from: 'src/sw.js', to: '.' }] }),
+    new InjectManifest({ swSrc: './src/sw.js', swDest: 'sw.js' }),
   ],
-  devServer: { open: true, port: 8080 },
+  devServer: { open: true, port: 8080, devMiddleware: { writeToDisk: true } },
 };
