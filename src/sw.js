@@ -1,15 +1,13 @@
-import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
+import { precacheAndRoute, createHandlerBoundToURL, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-
 // eslint-disable-next-line no-undef
 precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches(); 
 
-// Навигация: отдаём закешированный index.html
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
-// API новостей: сначала сеть (3 сек), при сбое — кеш
 registerRoute(
   ({ url }) =>
     (url.origin === 'https://remarkable-cassata-5e99fd.netlify.app' &&
@@ -22,7 +20,6 @@ registerRoute(
   })
 );
 
-// Картинки: сначала кеш, обновление в фоне
 registerRoute(
   ({ request }) => request.destination === 'image',
   new StaleWhileRevalidate({ cacheName: 'image-cache' })
