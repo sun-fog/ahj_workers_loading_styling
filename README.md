@@ -84,3 +84,4 @@ npx webpack serve    # dev-сервер на :8080
    `workbox-precache-v2-…`, `api-cache`, `image-cache`.
 2. DevTools → Network → Offline → перезагрузка: страница открывается,
    новости — из `api-cache`, картинки — из `image-cache`.
+   
